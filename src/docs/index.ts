@@ -134,3 +134,33 @@ export const metricsLinks = {
     },
   },
 }
+
+export const redirectLinks = {
+  schema: {
+    description: 'Redirect to original url',
+    tags: ['Short Links'],
+    summary: 'Redirect with code to original url',
+    params: {
+      type: 'object',
+      properties: {
+        code: {
+          type: 'string',
+          description: 'Code to create shortlink',
+        },
+      },
+    },
+    response: {
+      301: {
+        description: 'Successful response, redirect to original url',
+        type: 'null',
+      },
+      404: {
+        description: 'Link not found',
+        type: 'object',
+        properties: {
+          message: { type: 'string', value: 'Link not found!.' },
+        },
+      },
+    },
+  },
+}

@@ -3,39 +3,43 @@ import { z } from 'zod'
 import { sql } from '../lib/postgres'
 import postgres from 'postgres'
 import { redis } from '../lib/redis'
-import { createLinks, listLinks, metricsLinks } from '../docs'
+import { createLinks, listLinks, metricsLinks, redirectLinks } from '../docs'
 
 export const routes = async (app: FastifyInstance) => {
-  // app.get('/:code', async (req: FastifyRequest, res: FastifyReply) => {
-  //   try {
-  //     const { code } = z
-  //       .object({
-  //         code: z.string().min(3),
-  //       })
-  //       .parse(req.params)
+  app.get(
+    '/:code',
+    redirectLinks,
+    async (req: FastifyRequest, res: FastifyReply) => {
+      try {
+        const { code } = z
+          .object({
+            code: z.string().min(3),
+          })
+          .parse(req.params)
 
-  //     const result = await sql`
-  //         SELECT id, original_url
-  //         FROM short_links
-  //         WHERE short_links.code = ${code}
-  //       `
+        const result = await sql`
+          SELECT id, original_url
+          FROM short_links
+          WHERE short_links.code = ${code}
+        `
 
-  //     if (result.length === 0)
-  //       return res.status(400).send({ message: 'Link not found!' })
+        if (result.length === 0)
+          return res.status(404).send({ message: 'Link not found!' })
 
-  //     await redis.zIncrBy('metrics', 1, String(result[0].id))
+        await redis.zIncrBy('metrics', 1, String(result[0].id))
 
-  //     return res.redirect(301, result[0].original_url)
-  //   } catch (error) {
-  //     if (error instanceof postgres.PostgresError) {
-  //       if (error.code === '23505')
-  //         return res.status(400).send({ message: 'Code already exists.' })
-  //     }
+        return res.redirect(301, result[0].original_url)
+      } catch (error) {
+        if (error instanceof postgres.PostgresError) {
+          if (error.code === '23505')
+            return res.status(400).send({ message: 'Code already exists.' })
+        }
 
-  //     console.error(error)
-  //     return res.status(500).send({ message: 'Internal error.' })
-  //   }
-  // })
+        console.error(error)
+        return res.status(500).send({ message: 'Internal error.' })
+      }
+    },
+  )
 
   app.post(
     '/api/links',
